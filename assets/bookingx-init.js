@@ -2,8 +2,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var calEl = document.querySelector('#bx-calendar');
   var toggleBtn = document.getElementById('bx-date-toggle');
   var postDate = document.getElementById('bx-post-date');
-  var range = document.getElementById('bx-guests-range');
   var bubble = document.getElementById('bx-guests-bubble');
+  var track = document.getElementById('bx-guest-track');
   if (!calEl || typeof flatpickr === 'undefined') return;
 
   var today = new Date();
@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!selectedDates || !selectedDates[0]) return;
       var d = selectedDates[0];
       if (toggleBtn) toggleBtn.textContent = fmtShort(d);
+      // Update date range below based on new start date
+      try { updateDateRange(); } catch (e) {}
       // Hide calendar and show post-date sections
       var calPanel = calEl.querySelector('.flatpickr-calendar');
       document.querySelector('.flatpickr-calendar').classList.add('bx-hidden');
@@ -55,22 +57,177 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Guests slider bubble update
-  function updateBubble() {
-    if (!range || !bubble) return;
-    var val = parseInt(range.value, 10);
+  // Guests slider: draggable bubble on a track
+  function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
+  function setBubbleFromPct(pct) {
+    if (!bubble || !track) return;
+    var min = parseInt(track.getAttribute('data-min') || '1', 10);
+    var max = parseInt(track.getAttribute('data-max') || '12', 10);
+    pct = clamp(pct, 0, 1);
+    var val = Math.round(min + pct * (max - min));
+    if (val < min) val = min;
     bubble.textContent = String(val);
-    // Position bubble relative to range width
-    var min = parseInt(range.min || '1', 10);
-    var max = parseInt(range.max || '12', 10);
-    var pct = (val - min) / (max - min);
-    bubble.style.left = `calc(${pct * 100}% - 16px)`; // offset for bubble width
+    bubble.setAttribute('aria-valuenow', String(val));
+    bubble.style.left = `calc(${pct * 100}% - 16px)`;
   }
-  if (range) {
-    range.addEventListener('input', function () {
-      if (parseInt(range.value, 10) < 1) range.value = 1; // min guard
-      updateBubble();
+  function pctFromClientX(clientX) {
+    var rect = track.getBoundingClientRect();
+    var x = clamp(clientX - rect.left, 0, rect.width);
+    return rect.width ? x / rect.width : 0;
+  }
+  function startDrag(e) {
+    bubble.classList.add('dragging');
+    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    setBubbleFromPct(pctFromClientX(clientX));
+    function move(ev) {
+      var cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      setBubbleFromPct(pctFromClientX(cx));
+    }
+    function end() {
+      bubble.classList.remove('dragging');
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', end);
+      document.removeEventListener('touchmove', move);
+      document.removeEventListener('touchend', end);
+    }
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', end);
+    document.addEventListener('touchmove', move, { passive: true });
+    document.addEventListener('touchend', end);
+  }
+  if (track && bubble) {
+    // Initialize at 6 (middle-ish)
+    setBubbleFromPct((6 - parseInt(track.getAttribute('data-min') || '1', 10)) / (parseInt(track.getAttribute('data-max') || '12', 10) - parseInt(track.getAttribute('data-min') || '1', 10)));
+    bubble.addEventListener('mousedown', startDrag);
+    bubble.addEventListener('touchstart', startDrag, { passive: true });
+    track.addEventListener('click', function (e) { setBubbleFromPct(pctFromClientX(e.clientX)); });
+    // Keyboard support
+    bubble.addEventListener('keydown', function (e) {
+      var min = parseInt(track.getAttribute('data-min') || '1', 10);
+      var max = parseInt(track.getAttribute('data-max') || '12', 10);
+      var now = parseInt(bubble.getAttribute('aria-valuenow') || String(min), 10);
+      if (e.key === 'ArrowRight') now = clamp(now + 1, min, max);
+      if (e.key === 'ArrowLeft') now = clamp(now - 1, min, max);
+      var pct = (now - min) / (max - min);
+      setBubbleFromPct(pct);
     });
-    updateBubble();
+  }
+
+  // ----- Duration, Dates, and Time selection logic -----
+  var durationBtns = Array.prototype.slice.call(document.querySelectorAll('.bx-duration-btn'));
+  // Prefer the wrapper section if present, so removing bx-hidden reveals the whole block
+  var durationContainer = document.querySelector('.bx-duration-section') || document.querySelector('.bx-duration-group');
+  var selectBtn = document.getElementById('bx-select-btn');
+  var timeSection = document.getElementById('bx-time-section');
+  var timeGrid = document.getElementById('bx-time-grid');
+  var dateRangeEl = document.getElementById('bx-date-range');
+  var datesRow = dateRangeEl ? dateRangeEl.closest('.bx-row') : null;
+  var daysMinus = document.getElementById('bx-days-minus');
+  var daysPlus = document.getElementById('bx-days-plus');
+
+  var currentDuration = 'multi'; // '4' | '8' | 'multi'
+  var daysCount = 2; // minimum 2 days: selected date + 1 day
+  var selectedTimeLabel = '';
+
+  function fmtFull(d) {
+    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  function startDate() {
+    var d = fp && fp.selectedDates && fp.selectedDates[0] ? fp.selectedDates[0] : today;
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  function addDays(date, n) {
+    var copy = new Date(date.getTime());
+    copy.setDate(copy.getDate() + n);
+    return copy;
+  }
+  function updateDateRange() {
+    var s = startDate();
+    var e = addDays(s, daysCount - 1);
+    if (dateRangeEl) dateRangeEl.textContent = fmtFull(s) + ' to ' + fmtFull(e);
+  }
+  updateDateRange();
+
+  function setSelectLabel() {
+    if (!selectBtn) return;
+    var labelLeft = currentDuration === 'multi' ? (daysCount + ' days') : (currentDuration + ' hrs');
+    var time = selectedTimeLabel ? (' / ' + selectedTimeLabel) : '';
+    selectBtn.textContent = selectedTimeLabel ? (labelLeft + time) : 'Select';
+  }
+  setSelectLabel();
+
+  // Duration switching
+  durationBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      durationBtns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentDuration = btn.getAttribute('data-duration');
+      if (datesRow) {
+        if (currentDuration === 'multi') datesRow.classList.remove('bx-hidden');
+        else datesRow.classList.add('bx-hidden');
+      }
+      selectedTimeLabel = '';
+      setSelectLabel();
+    });
+  });
+
+  // Days controls with min 2 days
+  if (daysMinus) {
+    daysMinus.addEventListener('click', function () {
+      daysCount = Math.max(2, daysCount - 1);
+      updateDateRange();
+      setSelectLabel();
+    });
+  }
+  if (daysPlus) {
+    daysPlus.addEventListener('click', function () {
+      daysCount = daysCount + 1;
+      updateDateRange();
+      setSelectLabel();
+    });
+  }
+
+  function generateTimes() {
+    if (!timeGrid) return;
+    timeGrid.innerHTML = '';
+    var startHour = 6; // 6:00 AM
+    var endHour = 22;  // 10:00 PM
+    for (var h = startHour; h <= endHour; h++) {
+      for (var m = 0; m < 60; m += 30) {
+        var dt = new Date(1970, 0, 1, h, m);
+        var label = dt.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        var el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'bx-time';
+        el.textContent = label;
+        el.addEventListener('click', function (ev) {
+          selectedTimeLabel = ev.currentTarget.textContent.replace(/\s/g, ''); // normalize spacing like 7:30AM
+          if (timeSection) timeSection.classList.add('bx-hidden');
+          if (durationContainer) durationContainer.classList.add('bx-hidden');
+          if (datesRow) datesRow.classList.add('bx-hidden');
+          setSelectLabel();
+        });
+        timeGrid.appendChild(el);
+      }
+    }
+  }
+
+  // Show time picker when clicking Select
+  if (selectBtn) {
+    selectBtn.addEventListener('click', function () {
+      if (timeSection && timeSection.classList.contains('bx-hidden')) {
+        generateTimes();
+        timeSection.classList.remove('bx-hidden');
+        if (durationContainer) durationContainer.classList.remove('bx-hidden');
+        if (datesRow) {
+          if (currentDuration === 'multi') datesRow.classList.remove('bx-hidden');
+          else datesRow.classList.add('bx-hidden');
+        }
+      } else if (timeSection) {
+        timeSection.classList.add('bx-hidden');
+        if (durationContainer) durationContainer.classList.add('bx-hidden');
+        if (datesRow) datesRow.classList.add('bx-hidden');
+      }
+    });
   }
 });

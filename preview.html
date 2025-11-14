@@ -29,8 +29,28 @@
           <div class="bx-section">
             <div class="bx-row">
               <div class="bx-section-title">Duration / Pick-up time</div>
-              <button class="bx-select-btn" type="button">Select</button>
+              <button id="bx-select-btn" class="bx-select-btn" type="button">Select</button>
             </div>
+            <div class="bx-duration-group bx-hidden" role="tablist">
+              <button type="button" class="bx-duration-btn" data-duration="4">4 hrs</button>
+              <button type="button" class="bx-duration-btn" data-duration="8">8 hrs</button>
+              <button type="button" class="bx-duration-btn active" data-duration="multi">Multi-Day</button>
+            </div>
+            <div class="bx-row bx-hidden" style="margin-top:12px;">
+              <div class="bx-section-title">Dates</div>
+              <div class="bx-row-right">
+                <div id="bx-date-range" class="bx-date-range">Nov 17, 2025 to Nov 18, 2025</div>
+                <div class="bx-days-pill">
+                  <button id="bx-days-minus" type="button" aria-label="Decrease days">−</button>
+                  <button id="bx-days-plus" type="button" aria-label="Increase days">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="bx-time-section" class="bx-section bx-hidden">
+            <div class="bx-section-title">Available Pick-up Times</div>
+            <div id="bx-time-grid" class="bx-time-grid"></div>
           </div>
 
           <div class="bx-divider"></div>
@@ -38,8 +58,9 @@
           <div class="bx-section">
             <div class="bx-section-title">3. Guests</div>
             <div class="bx-guest-slider">
-              <input id="bx-guests-range" type="range" min="1" max="12" value="6" />
-              <div id="bx-guests-bubble" class="bx-bubble">6</div>
+              <div id="bx-guest-track" class="bx-track" data-min="1" data-max="12">
+                <div id="bx-guests-bubble" class="bx-bubble" role="slider" aria-valuemin="1" aria-valuemax="12" aria-valuenow="6" tabindex="0">6</div>
+              </div>
             </div>
           </div>
         </div>
