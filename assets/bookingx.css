@@ -10,11 +10,11 @@
 }
 
 .bx-card {
-  background: var(--bx-bg);
+  /* background: var(--bx-bg);
   border: 1px solid var(--bx-border);
   border-radius: var(--bx-radius);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-  max-width: 720px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15); */
+  max-width: 100%;
   margin: 0 auto;
   padding: 24px;
 }

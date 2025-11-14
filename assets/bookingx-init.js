@@ -1,42 +1,46 @@
 document.addEventListener('DOMContentLoaded', function () {
-  var calEl = document.querySelector('#bx-calendar');
-  var toggleBtn = document.getElementById('bx-date-toggle');
-  var postDate = document.getElementById('bx-post-date');
-  var bubble = document.getElementById('bx-guests-bubble');
-  var track = document.getElementById('bx-guest-track');
-  if (!calEl || typeof flatpickr === 'undefined') return;
+  function setupBookingX(root) {
+    var scope = root || document;
+    var calEl = scope.querySelector('#bx-calendar');
+    if (!calEl || typeof flatpickr === 'undefined') return false;
+    if (calEl.getAttribute('data-bx-init') === '1') return true;
+    calEl.setAttribute('data-bx-init', '1');
 
-  var today = new Date();
-  var minMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    var toggleBtn = scope.querySelector('#bx-date-toggle');
+    var postDate = scope.querySelector('#bx-post-date');
+    var bubble = scope.querySelector('#bx-guests-bubble');
+    var track = scope.querySelector('#bx-guest-track');
 
-  function fmtShort(d) {
-    var m = d.toLocaleString('en-US', { month: 'short' });
-    return m + ', ' + String(d.getDate());
-  }
+    var today = new Date();
+    var minMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
-  // Initialize toggle button text with today
-  if (toggleBtn) toggleBtn.textContent = fmtShort(today);
+    function fmtShort(d) {
+      var m = d.toLocaleString('en-US', { month: 'short' });
+      return m + ', ' + String(d.getDate());
+    }
 
-  var fp = flatpickr(calEl, {
-    inline: true,
-    disableMobile: true,
-    defaultDate: today,
-    minDate: minMonthStart,
-    onChange: function (selectedDates) {
-      if (!selectedDates || !selectedDates[0]) return;
-      var d = selectedDates[0];
-      if (toggleBtn) toggleBtn.textContent = fmtShort(d);
-      // Update date range below based on new start date
-      try { updateDateRange(); } catch (e) {}
-      // Hide calendar and show post-date sections
-      var calPanel = calEl.querySelector('.flatpickr-calendar');
-      document.querySelector('.flatpickr-calendar').classList.add('bx-hidden');
-      if (calPanel) calPanel.classList.add('bx-hidden');
-      if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
-      if (postDate) postDate.classList.remove('bx-hidden');
-      console.log(calEl);
-    },
-  });
+    if (toggleBtn) toggleBtn.textContent = fmtShort(today);
+
+    var fp = flatpickr(calEl, {
+      inline: true,
+      disableMobile: true,
+      defaultDate: today,
+      minDate: minMonthStart,
+      onChange: function (selectedDates) {
+        if (!selectedDates || !selectedDates[0]) return;
+        var d = selectedDates[0];
+        if (toggleBtn) toggleBtn.textContent = fmtShort(d);
+        // Update date range below based on new start date
+        try { updateDateRange(); } catch (e) {}
+        // Hide calendar and show post-date sections
+        var calPanel = calEl.querySelector('.flatpickr-calendar');
+        document.querySelector('.flatpickr-calendar').classList.add('bx-hidden');
+        if (calPanel) calPanel.classList.add('bx-hidden');
+        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+        if (postDate) postDate.classList.remove('bx-hidden');
+        console.log(calEl);
+      },
+    });
 
   // Toggle calendar show/hide
   if (toggleBtn) {
@@ -114,16 +118,15 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ----- Duration, Dates, and Time selection logic -----
-  var durationBtns = Array.prototype.slice.call(document.querySelectorAll('.bx-duration-btn'));
-  // Prefer the wrapper section if present, so removing bx-hidden reveals the whole block
-  var durationContainer = document.querySelector('.bx-duration-section') || document.querySelector('.bx-duration-group');
-  var selectBtn = document.getElementById('bx-select-btn');
-  var timeSection = document.getElementById('bx-time-section');
-  var timeGrid = document.getElementById('bx-time-grid');
-  var dateRangeEl = document.getElementById('bx-date-range');
+  var durationBtns = Array.prototype.slice.call(scope.querySelectorAll('.bx-duration-btn'));
+  var durationContainer = scope.querySelector('.bx-duration-section') || scope.querySelector('.bx-duration-group');
+  var selectBtn = scope.querySelector('#bx-select-btn');
+  var timeSection = scope.querySelector('#bx-time-section');
+  var timeGrid = scope.querySelector('#bx-time-grid');
+  var dateRangeEl = scope.querySelector('#bx-date-range');
   var datesRow = dateRangeEl ? dateRangeEl.closest('.bx-row') : null;
-  var daysMinus = document.getElementById('bx-days-minus');
-  var daysPlus = document.getElementById('bx-days-plus');
+  var daysMinus = scope.querySelector('#bx-days-minus');
+  var daysPlus = scope.querySelector('#bx-days-plus');
 
   var currentDuration = 'multi'; // '4' | '8' | 'multi'
   var daysCount = 2; // minimum 2 days: selected date + 1 day
@@ -230,4 +233,39 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   }
+    return true;
+  }
+
+  // Run once on DOM ready
+  setupBookingX(document);
+
+  // Elementor Popup support: jQuery event
+  if (window.jQuery) {
+    window.jQuery(document).on('elementor/popup/show', function () {
+      setupBookingX(document);
+    });
+  }
+  // Elementor frontend hooks if available
+  if (window.elementorFrontend && elementorFrontend.hooks && typeof elementorFrontend.hooks.addAction === 'function') {
+    try {
+      elementorFrontend.hooks.addAction('popup:open', function () {
+        setupBookingX(document);
+      });
+    } catch (e) {}
+  }
+  // Fallback: observe DOM for injected bookingx content
+  try {
+    var mo = new MutationObserver(function (mutations) {
+      mutations.forEach(function (m) {
+        m.addedNodes.forEach(function (node) {
+          if (node && node.nodeType === 1) {
+            var root = node.matches && node.matches('.bookingx-container') ? node : (node.querySelector && node.querySelector('.bookingx-container'));
+            if (root) setupBookingX(root);
+            else if (node.querySelector && node.querySelector('#bx-calendar')) setupBookingX(node);
+          }
+        });
+      });
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+  } catch (e) {}
 });

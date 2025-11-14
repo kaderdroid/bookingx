@@ -55,8 +55,8 @@ function bookingx_shortcode_render()
     <div class="bookingx-container" role="group" aria-label="BookingX">
         <div class="bx-card">
             <div class="bx-header">
-                <div class="bx-step">1 of 3</div>
-                <h3 class="bx-title">Charter details</h3>
+                <!-- <div class="bx-step">1 of 3</div> -->
+                <!-- <h3 class="bx-title">Charter details</h3> -->
             </div>
 
             <div class="bx-section">
