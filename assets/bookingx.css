@@ -1,0 +1,166 @@
+/* Basic container styling to mimic popup card inline */
+.bookingx-container {
+  --bx-radius: 14px;
+  --bx-border: rgba(0,0,0,0.08);
+  --bx-muted: #6b7280;
+  --bx-text: #111827;
+  --bx-bg: #ffffff;
+  --bx-accent: #111827;
+  display: block;
+}
+
+.bx-card {
+  background: var(--bx-bg);
+  border: 1px solid var(--bx-border);
+  border-radius: var(--bx-radius);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.bx-header { margin-bottom: 18px; }
+.bx-step {
+  font-size: 14px;
+  color: var(--bx-muted);
+}
+.bx-title {
+  margin: 8px 0 0;
+  font-size: 22px;
+  color: var(--bx-text);
+}
+
+.bx-section { margin-top: 18px; }
+.bx-section-title {
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: var(--bx-text);
+}
+/* Row layout with right-side button */
+.bx-row { display: flex; align-items: center; justify-content: space-between; }
+.bx-date-toggle {
+  border: 2px solid #1e3a8a; /* navy */
+  color: #1e3a8a;
+  background: #f8fafc;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.bx-date-toggle[aria-expanded="true"] { box-shadow: 0 0 0 3px rgba(30,58,138,0.15); }
+.bx-hidden { display: none !important; }
+
+/* Divider */
+.bx-divider { height: 1px; background: #e5e7eb; margin: 16px 0; }
+
+/* Select button */
+.bx-select-btn {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-weight: 600;
+}
+
+/* Flatpickr overrides to match design */
+#bx-calendar .flatpickr-calendar {
+  box-shadow: none;
+  border: none;
+}
+#bx-calendar .flatpickr-months .flatpickr-month {
+  height: auto;
+}
+#bx-calendar .flatpickr-months .flatpickr-month .cur-month {
+  font-size: 22px;
+  font-weight: 700;
+}
+#bx-calendar .flatpickr-months .flatpickr-month .numInputWrapper input {
+  font-size: 22px;
+}
+#bx-calendar .flatpickr-weekdays { margin-top: 8px; }
+#bx-calendar .flatpickr-day {
+  width: 100%;
+  height: 48px;
+  line-height: 48px;
+  border-radius: 8px;
+  color: var(--bx-text);
+}
+#bx-calendar .flatpickr-day.today { font-weight: 600; }
+#bx-calendar .flatpickr-day.selected { position: relative; }
+#bx-calendar .flatpickr-day.selected::after {
+  content: '';
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--bx-text);
+}
+
+/* Guests slider */
+.bx-guest-slider { position: relative; padding: 18px 8px; }
+.bx-guest-slider input[type="range"] {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 999px;
+}
+.bx-guest-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px; height: 24px; border-radius: 50%; background: #ffffff; border: 2px solid #111827; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.bx-guest-slider input[type="range"]::-moz-range-thumb {
+  width: 24px; height: 24px; border-radius: 50%; background: #ffffff; border: 2px solid #111827; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.bx-bubble {
+  position: absolute;
+  top: -6px;
+  left: 0;
+  transform: translateX(-50%);
+  min-width: 48px;
+  height: 36px;
+  line-height: 36px;
+  text-align: center;
+  border: 2px solid #111827;
+  border-radius: 999px;
+  background: #ffffff;
+  font-weight: 600;
+}
+
+.bx-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 22px;
+}
+.bx-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 2px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.bx-amount { font-size: 22px; font-weight: 800; }
+.bx-duration { color: var(--bx-muted); display: inline-flex; align-items: center; gap: 6px; }
+.bx-caret { font-size: 14px; color: var(--bx-muted); }
+
+.bx-continue {
+  flex: 0 0 260px;
+  background: #9ca3af;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.bx-continue[disabled] { opacity: 0.9; }
+
+/* Responsive tweaks */
+@media (max-width: 760px) {
+  .bx-card { padding: 18px; }
+  .bx-continue { flex: 1; }
+}
