@@ -60,7 +60,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var track = scope.querySelector('#bx-guest-track');
 
     var today = new Date();
-    var minMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    // Use date-only (midnight) to prevent selecting any past date
+    var todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
     function fmtShort(d) {
       var m = d.toLocaleString('en-US', { month: 'short' });
@@ -72,8 +73,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var fp = flatpickr(calEl, {
       inline: true,
       disableMobile: true,
-      defaultDate: today,
-      minDate: minMonthStart,
+      defaultDate: todayStart,
+      minDate: todayStart,
       onChange: function (selectedDates) {
         if (!selectedDates || !selectedDates[0]) return;
         var d = selectedDates[0];
@@ -114,13 +115,13 @@ document.addEventListener('DOMContentLoaded', function () {
   function setBubbleFromPct(pct) {
     if (!bubble || !track) return;
     var min = parseInt(track.getAttribute('data-min') || '1', 10);
-    var max = parseInt(track.getAttribute('data-max') || '12', 10);
+    var max = parseInt(track.getAttribute('data-max') || '60', 10);
     pct = clamp(pct, 0, 1);
     var val = Math.round(min + pct * (max - min));
     if (val < min) val = min;
     bubble.textContent = String(val);
     bubble.setAttribute('aria-valuenow', String(val));
-    bubble.style.left = `calc(${pct * 100}% - 16px)`;
+    bubble.style.left = `calc(${pct * 100}% - 13px)`;
   }
   function pctFromClientX(clientX) {
     var rect = track.getBoundingClientRect();
@@ -175,6 +176,15 @@ document.addEventListener('DOMContentLoaded', function () {
   var datesRow = dateRangeEl ? dateRangeEl.closest('.bx-row') : null;
   var daysMinus = scope.querySelector('#bx-days-minus');
   var daysPlus = scope.querySelector('#bx-days-plus');
+  var footerAmount = scope.querySelector('.bx-amount');
+  var continueBtn = scope.querySelector('.bx-continue');
+  var footerDurationText = (function(){
+    var d = scope.querySelector('.bx-duration');
+    return d ? d.querySelector('span') : null; // first span holds the text (before caret)
+  })();
+  // Resolve the correct BookingX container (handles multiple instances and popups)
+  var rootContainer = calEl ? calEl.closest('.bookingx-container') : (scope.querySelector('.bookingx-container') || document.querySelector('.bookingx-container'));
+  var currencySymbol = (rootContainer && rootContainer.getAttribute('data-currency-symbol')) ? rootContainer.getAttribute('data-currency-symbol') : '$';
 
   var currentDuration = 'multi'; // '4' | '8' | 'multi'
   var daysCount = 2; // minimum 2 days: selected date + 1 day
@@ -207,6 +217,27 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   setSelectLabel();
 
+  function formatNumber(val) {
+    var n = parseFloat(val);
+    if (isNaN(n)) return val || '';
+    return n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+  function updateFooter(label, price) {
+    if (footerAmount && price != null) footerAmount.textContent = currencySymbol + formatNumber(price);
+    if (footerDurationText && label) footerDurationText.textContent = 'per ' + label;
+  }
+  // Initialize footer from the active or first button
+  (function initFromActive(){
+    var activeBtn = scope.querySelector('.bx-duration-btn.active') || durationBtns[0];
+    if (activeBtn) {
+      currentDuration = activeBtn.getAttribute('data-duration') || currentDuration;
+      var label = (activeBtn.textContent || '').trim();
+      var price = activeBtn.getAttribute('data-variation-price');
+      updateFooter(label, price);
+      setSelectLabel();
+    }
+  })();
+
   // Duration switching
   durationBtns.forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -219,6 +250,10 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       selectedTimeLabel = '';
       setSelectLabel();
+      // Update footer immediately
+      var label = (btn.textContent || '').trim();
+      var price = btn.getAttribute('data-variation-price');
+      updateFooter(label, price);
     });
   });
 
@@ -257,6 +292,10 @@ document.addEventListener('DOMContentLoaded', function () {
           if (durationContainer) durationContainer.classList.add('bx-hidden');
           if (datesRow) datesRow.classList.add('bx-hidden');
           setSelectLabel();
+          // Enable CONTINUE button once a time has been picked
+          if (continueBtn) {
+            continueBtn.removeAttribute('disabled');
+          }
         });
         timeGrid.appendChild(el);
       }

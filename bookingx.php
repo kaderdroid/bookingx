@@ -78,8 +78,14 @@ function bookingx_shortcode_render()
     wp_enqueue_style('bookingx-style');
 
     ob_start();
+
+    $product_id = get_the_ID();
+    $product    = wc_get_product($product_id);
+    $default_label = '';
+    $default_price = 0;
+    $currency_symbol = function_exists('get_woocommerce_currency_symbol') ? get_woocommerce_currency_symbol() : '$';
 ?>
-    <div class="bookingx-container" role="group" aria-label="BookingX">
+    <div class="bookingx-container" role="group" aria-label="BookingX" data-currency-symbol="<?php echo esc_attr($currency_symbol); ?>">
         <div class="bx-card">
             <div class="bx-header">
                 <!-- <div class="bx-step">1 of 3</div> -->
@@ -103,11 +109,71 @@ function bookingx_shortcode_render()
                     </div>
                     <div class="bx-duration-section bx-hidden">
                         <div class="bx-section-title">Duration</div>
-                        <div class="bx-duration-group" role="tablist">
-                            <button type="button" class="bx-duration-btn" data-duration="4">4 hrs</button>
-                            <button type="button" class="bx-duration-btn" data-duration="8">8 hrs</button>
-                            <button type="button" class="bx-duration-btn active" data-duration="multi">Multi-Day</button>
-                        </div>
+                        <?php
+                        // Render duration buttons dynamically from variable product variations
+                        $rendered_buttons = false;
+                        if ($product && $product->is_type('variable')) {
+                            $variation_ids = $product->get_children();
+                            if (!empty($variation_ids)) {
+                                echo '<div class="bx-duration-group" role="tablist">';
+                                $first = true;
+                                foreach ($variation_ids as $vid) {
+                                    $variation = wc_get_product($vid);
+                                    if (!$variation) continue;
+                                    $attrs  = $variation->get_attributes();
+                                    $label  = '';
+                                    $token  = 'multi';
+
+                                    // Prefer the first attribute value as the button label (e.g. 4hr, 6hr, multi-day, over-night)
+                                    if (!empty($attrs)) {
+                                        $firstVal = reset($attrs);
+                                        $label = is_array($firstVal) ? implode(' ', $firstVal) : (string) $firstVal;
+                                    }
+                                    // Fallbacks if attribute value is empty
+                                    if ($label === '') {
+                                        $attrs_summary = function_exists('wc_get_product_variation_attributes') ? wc_get_product_variation_attributes($vid) : array();
+                                        if (!empty($attrs_summary)) {
+                                            $label = implode(' ', array_values($attrs_summary));
+                                        }
+                                        if ($label === '') {
+                                            $label = $variation->get_name();
+                                        }
+                                    }
+
+                                    // Derive a token used by JS for behavior: numeric hours or 'multi' for multi-day/overnight
+                                    $lv = strtolower(trim($label));
+                                    if (preg_match('/(\d+)/', $lv, $m)) {
+                                        $token = $m[1];
+                                    } elseif (strpos($lv, 'multi') !== false || strpos($lv, 'day') !== false || strpos($lv, 'overnight') !== false || strpos($lv, 'over-night') !== false) {
+                                        $token = 'multi';
+                                    } else {
+                                        // Generic fallback token based on label slug
+                                        $token = sanitize_title($lv);
+                                    }
+
+                                    $display_price = wc_get_price_to_display($variation);
+
+                                    // Capture defaults from the first variation
+                                    if ($first) {
+                                        $default_label = $label;
+                                        $default_price = $display_price;
+                                    }
+
+                                    printf(
+                                        '<button type="button" class="bx-duration-btn%s" data-duration="%s" data-variation-id="%d" data-variation-price="%s">%s</button>',
+                                        $first ? ' active' : '',
+                                        esc_attr($token),
+                                        absint($vid),
+                                        esc_attr($display_price),
+                                        esc_html($label)
+                                    );
+                                    $first = false;
+                                }
+                                echo '</div>';
+                                $rendered_buttons = true;
+                            }
+                        }
+                        ?>
                     </div>
 
                     <div class="bx-row bx-hidden" style="margin-top:12px;">
@@ -141,9 +207,9 @@ function bookingx_shortcode_render()
 
             <div class="bx-footer">
                 <div class="bx-price">
-                    <span class="bx-amount">$6,527</span>
+                    <span class="bx-amount"><?php echo function_exists('wc_price') ? wc_price($default_price) : esc_html($currency_symbol . number_format((float)$default_price, 2)); ?></span>
                     <div class="bx-duration">
-                        <span>per 8 hrs</span>
+                        <span><?php echo $default_label ? ('per ' . esc_html($default_label)) : ''; ?></span>
                         <span class="bx-caret">▾</span>
                     </div>
                 </div>

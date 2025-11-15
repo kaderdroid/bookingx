@@ -228,6 +228,12 @@
   justify-content: space-between;
   gap: 16px;
   margin-top: 22px;
+  position: sticky;
+  bottom: 0;
+  background: var(--bx-bg);
+  z-index: 1000;
+  border-top: 1px solid var(--bx-border);
+  padding: 12px 0; /* ensure comfortable touch area when stuck */
 }
 .bx-price {
   /* display: inline-flex; */
