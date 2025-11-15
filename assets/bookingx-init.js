@@ -1,3 +1,51 @@
+function openModal() {
+      const modal = document.getElementById('bookingxModal');
+      modal.style.display = 'block';
+      setTimeout(() => modal.classList.add('open'), 10); // Trigger smooth fade after display
+  }
+
+  function closeModal() {
+      const modal = document.getElementById('bookingxModal');
+      modal.classList.remove('open');
+      setTimeout(() => modal.style.display = 'none', 300); // Hide after fade out
+  }
+
+  // Close modal if clicking outside of it
+  window.onclick = function(event) {
+      const modal = document.getElementById('bookingxModal');
+      if (event.target === modal) {
+          closeModal();
+      }
+  }
+
+  // Optional: Close on Escape key
+  document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+          closeModal();
+      }
+  });
+
+  // Attach event listener to button by ID (no inline onclick)
+  document.addEventListener('DOMContentLoaded', function() {
+      const openBtn = document.getElementById('openBookingModalBtn');
+      if (openBtn) {
+          openBtn.addEventListener('click', openModal);
+      }
+  });
+
+/****
+ * 
+ * END POPUP
+ */
+
+// Attach event listener to button by ID (no inline onclick)
+document.addEventListener('DOMContentLoaded', function() {
+  const openBtn = document.getElementById('openBookingXModalBtn');
+  if (openBtn) {
+      openBtn.addEventListener('click', openModal);
+  }
+});
+
 document.addEventListener('DOMContentLoaded', function () {
   function setupBookingX(root) {
     var scope = root || document;

@@ -10,6 +10,19 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
+// Check if WooCommerce is active; if not, deactivate this plugin.
+add_action('admin_init', 'bookingx_check_woocommerce');
+function bookingx_check_woocommerce()
+{
+    if (!class_exists('WooCommerce')) {
+        deactivate_plugins(plugin_basename(__FILE__));
+        add_action('admin_notices', function () {
+            echo '<div class="notice notice-error"><p>BookingX requires WooCommerce to be active. Plugin has been deactivated.</p></div>';
+        });
+    }
+}
+
+
 function bookingx_enqueue_assets()
 {
     // BookingX base styles
@@ -45,6 +58,20 @@ function bookingx_enqueue_assets()
     );
 }
 add_action('init', 'bookingx_enqueue_assets');
+
+// Only enqueue assets on WooCommerce product single pages
+function bookingx_enqueue_on_product_pages()
+{
+    if (is_admin()) return;
+    $is_product_page = function_exists('is_product') ? is_product() : is_singular('product');
+    if ($is_product_page) {
+        wp_enqueue_style('bookingx-style');
+        wp_enqueue_style('flatpickr-css');
+        // bookingx-init depends on flatpickr-js, WordPress will load it automatically
+        wp_enqueue_script('bookingx-init');
+    }
+}
+add_action('wp_enqueue_scripts', 'bookingx_enqueue_on_product_pages');
 
 function bookingx_shortcode_render()
 {
@@ -134,3 +161,24 @@ function bookingx_shortcode_render()
     return $html;
 }
 add_shortcode('bookingx', 'bookingx_shortcode_render');
+add_action('wp_footer', 'bookingx_footer_script');
+function bookingx_footer_script()
+{
+    // Check if this is a WooCommerce product details page
+    if (function_exists('is_product') && is_product()) {
+        ?>
+        <div id="bookingxModal" class="bookingx-modal">
+            <div class="bookingx-modal-content">
+                <span class="bookingx-close" onclick="closeModal()">&times;</span>
+                <div class="bookingx-modal-header">
+               <!-- <h2 class="bookingx-modal-title">Modal Title</h2> -->
+                </div>
+                <div class="bookingx-modal-body">
+                    <?php echo do_shortcode('[bookingx]'); ?>
+                </div>
+            </div>
+        </div>
+        <?php
+
+    }
+}

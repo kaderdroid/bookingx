@@ -1,3 +1,104 @@
+/****************
+* POPUP STYLES
+*
+****************/
+
+  .bookingx-modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.5); /* Overlay */
+      opacity: 0; /* Initially invisible for smooth fade */
+      transition: opacity 0.3s ease-in-out; /* Smooth overlay fade */
+  }
+
+  .bookingx-modal.open {
+      opacity: 1; /* Fade in overlay + content */
+  }
+
+  .bookingx-modal-content {
+      position: fixed;
+      right: 24px; /* Always in position with right gap */
+      top: 24px; /* 24px top gap */
+      width: 450px; /* Fixed width for panel */
+      height: calc(100vh - 48px); /* Height minus top+bottom gaps */
+      background-color: #fff;
+      box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1); /* Shadow on left side */
+      transform: scale(0.95); /* Subtle scale for smooth entry */
+      transition: transform 0.3s ease-in-out; /* Smooth scale (overlay handles opacity) */
+      z-index: 1001;
+  }
+
+  .bookingx-modal.open .bookingx-modal-content {
+      transform: scale(1); /* Scale to full */
+  }
+
+  .bookingx-close {
+      position: absolute;
+      top: 15px;
+      left: 15px; /* Left top position */
+      color: #aaa;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 10px;
+      z-index: 1002;
+  }
+
+  .bookingx-close:hover,
+  .bookingx-close:focus {
+      color: #000;
+      text-decoration: none;
+  }
+
+  .bookingx-modal-header {
+      padding: 10px 20px 20px 10px; /* Adjusted top padding for close icon and gap */
+      /* border-bottom: 1px solid #eee; */
+  }
+
+  .bookingx-modal-title {
+      margin: 0;
+      font-size: 1.5em;
+      color: #333;
+  }
+
+  .bookingx-modal-body {
+    padding: 3px;
+    height: calc(100% - 100px); /* Adjust for header and padding */
+    overflow-y: auto;
+  }
+
+  /* Trigger Button */
+  .bookingx-open-modal-btn {
+      background-color: #28a745;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+  }
+
+  .bookingx-open-modal-btn:hover {
+      background-color: #218838;
+  }
+
+  /* Responsive: On small screens, adjust width and gaps */
+  @media (max-width: 480px) {
+      .bookingx-modal-content {
+          width: calc(100% - 48px); /* Full width minus gaps */
+          top: 12px; /* Smaller top gap on mobile */
+          height: calc(100vh - 24px); /* Adjust height */
+          right: 24px; /* Keep right gap */
+      }
+  }
+
 /* Basic container styling to mimic popup card inline */
 .bookingx-container {
   --bx-radius: 14px;
@@ -61,6 +162,10 @@
   font-weight: 600;
 }
 
+#bx-calendar{
+  margin-top: 15px;
+}
+
 /* Flatpickr overrides to match design */
 #bx-calendar .flatpickr-calendar {
   box-shadow: none;
@@ -102,14 +207,14 @@
 .bx-track { position: relative; width: 100%; height: 4px; background: #e5e7eb; border-radius: 999px; }
 .bx-bubble {
   position: absolute;
-  top: -6px;
+  top: -16px;
   left: 0;
   transform: translateX(-50%);
   min-width: 48px;
   height: 36px;
   line-height: 36px;
   text-align: center;
-  border: 2px solid #111827;
+  border: 1px solid #111827;
   border-radius: 999px;
   background: #ffffff;
   font-weight: 600;
@@ -125,15 +230,18 @@
   margin-top: 22px;
 }
 .bx-price {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  border: 2px solid #d1d5db;
-  border-radius: 10px;
+  /* display: inline-flex; */
+  /* align-items: center; */
+  /* gap: 10px; */
+  /* border: 2px solid #d1d5db; */
+  /* border-radius: 10px; */
   padding: 10px 12px;
 }
-.bx-amount { font-size: 22px; font-weight: 800; }
-.bx-duration { color: var(--bx-muted); display: inline-flex; align-items: center; gap: 6px; }
+.bx-amount { font-size: 14px; font-weight: 800; }
+.bx-duration { 
+  /* color: var(--bx-muted); display: inline-flex; align-items: center; gap: 6px;  */
+  font-size: 12px;
+}
 .bx-caret { font-size: 14px; color: var(--bx-muted); }
 
 .bx-continue {
@@ -183,7 +291,8 @@
   height: 30px;
   cursor: pointer;
   font-size: 18px;
-  line-height: 30px;
+  line-height: 15px;
+  padding: 0px !important;
 }
 .bx-days-pill button:active { background: rgba(47,111,237,0.06); }
 
@@ -204,4 +313,30 @@
 @media (max-width: 760px) {
   .bx-card { padding: 18px; }
   .bx-continue { flex: 1; }
+}
+
+.flatpickr-calendar.inline{
+  width: 100%;
+  box-shadow: none;
+  --webkit-box-shadow: none;
+}
+
+.flatpickr-rContainer{
+  width: 100%;
+}
+
+.dayContainer{
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+}
+
+.flatpickr-days{
+  width: 100% !important;
+}
+
+.dayContainer {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
 }
