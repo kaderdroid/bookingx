@@ -1,21 +1,21 @@
 function openModal() {
-      const modal = document.getElementById('bookingxModal');
-      modal.style.display = 'block';
-      setTimeout(() => modal.classList.add('open'), 10); // Trigger smooth fade after display
-  }
+  const modal = document.getElementById('bookingxModal');
+  modal.style.display = 'block';
+  setTimeout(() => modal.classList.add('open'), 10); // Trigger smooth fade after display
+}
 
   function closeModal() {
-      const modal = document.getElementById('bookingxModal');
-      modal.classList.remove('open');
-      setTimeout(() => modal.style.display = 'none', 300); // Hide after fade out
+    const modal = document.getElementById('bookingxModal');
+    modal.classList.remove('open');
+    setTimeout(() => modal.style.display = 'none', 300); // Hide after fade out
   }
 
   // Close modal if clicking outside of it
   window.onclick = function(event) {
-      const modal = document.getElementById('bookingxModal');
-      if (event.target === modal) {
-          closeModal();
-      }
+    const modal = document.getElementById('bookingxModal');
+    if (event.target === modal) {
+      closeModal();
+    }
   }
 
   // Optional: Close on Escape key
@@ -185,9 +185,13 @@ document.addEventListener('DOMContentLoaded', function () {
   // Resolve the correct BookingX container (handles multiple instances and popups)
   var rootContainer = calEl ? calEl.closest('.bookingx-container') : (scope.querySelector('.bookingx-container') || document.querySelector('.bookingx-container'));
   var currencySymbol = (rootContainer && rootContainer.getAttribute('data-currency-symbol')) ? rootContainer.getAttribute('data-currency-symbol') : '$';
+  var productId = (rootContainer && rootContainer.getAttribute('data-product-id')) ? rootContainer.getAttribute('data-product-id') : '';
+  var productType = (rootContainer && rootContainer.getAttribute('data-product-type')) ? rootContainer.getAttribute('data-product-type') : '';
+  var isProcessing = false; // Prevent multiple submissions even if disabled is removed
 
-  var currentDuration = 'multi'; // '4' | '8' | 'multi'
-  var daysCount = 2; // minimum 2 days: selected date + 1 day
+  var isSimpleProduct = (!durationBtns.length) || (productType === 'simple');
+  var currentDuration = isSimpleProduct ? '1' : 'multi'; // '1' for single-day when simple
+  var daysCount = isSimpleProduct ? 1 : 2; // single day for simple products
   var selectedTimeLabel = '';
 
   function fmtFull(d) {
@@ -236,6 +240,11 @@ document.addEventListener('DOMContentLoaded', function () {
       updateFooter(label, price);
       setSelectLabel();
     }
+    // Ensure Dates row stays hidden for simple products
+    if (datesRow) {
+      if (currentDuration === 'multi') datesRow.classList.remove('bx-hidden');
+      else datesRow.classList.add('bx-hidden');
+    }
   })();
 
   // Duration switching
@@ -282,11 +291,15 @@ document.addEventListener('DOMContentLoaded', function () {
       for (var m = 0; m < 60; m += 30) {
         var dt = new Date(1970, 0, 1, h, m);
         var label = dt.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        var labelNorm = label.replace(/\s/g, '');
         var el = document.createElement('button');
         el.type = 'button';
         el.className = 'bx-time';
         el.textContent = label;
         el.addEventListener('click', function (ev) {
+          // Remove previous active-time and set current one
+          Array.prototype.forEach.call(timeGrid.querySelectorAll('.bx-time'), function (b) { b.classList.remove('active-time'); });
+          ev.currentTarget.classList.add('active-time');
           selectedTimeLabel = ev.currentTarget.textContent.replace(/\s/g, ''); // normalize spacing like 7:30AM
           if (timeSection) timeSection.classList.add('bx-hidden');
           if (durationContainer) durationContainer.classList.add('bx-hidden');
@@ -297,6 +310,10 @@ document.addEventListener('DOMContentLoaded', function () {
             continueBtn.removeAttribute('disabled');
           }
         });
+        // Preserve active-time state if a time was already chosen
+        if (selectedTimeLabel && selectedTimeLabel === labelNorm) {
+          el.classList.add('active-time');
+        }
         timeGrid.appendChild(el);
       }
     }
@@ -319,6 +336,85 @@ document.addEventListener('DOMContentLoaded', function () {
         if (datesRow) datesRow.classList.add('bx-hidden');
       }
     });
+  }
+
+  // Helper to format date as YYYY-MM-DD
+  function toISODate(d) {
+    var y = d.getFullYear();
+    var m = ('0' + (d.getMonth() + 1)).slice(-2);
+    var day = ('0' + d.getDate()).slice(-2);
+    return y + '-' + m + '-' + day;
+  }
+  // Handle Add to Cart on CONTINUE click
+  if (continueBtn) {
+    continueBtn.addEventListener('click', function () {
+      if (continueBtn.hasAttribute('disabled') || isProcessing) return;
+      isProcessing = true;
+      // Show processing state and lock the button
+      var originalText = continueBtn.getAttribute('data-original-text') || continueBtn.textContent;
+      continueBtn.setAttribute('data-original-text', originalText);
+      continueBtn.textContent = 'PROCESSING…';
+      continueBtn.classList.add('processing');
+      continueBtn.setAttribute('aria-busy', 'true');
+      var activeBtn = scope.querySelector('.bx-duration-btn.active') || durationBtns[0];
+      var variationId = activeBtn ? activeBtn.getAttribute('data-variation-id') : '';
+      var durationLabel = activeBtn ? (activeBtn.textContent || '').trim() : '';
+      var s = startDate();
+      var e = (currentDuration === 'multi') ? addDays(s, daysCount - 1) : s;
+      var guestsVal = bubble ? (bubble.getAttribute('aria-valuenow') || bubble.textContent || '0') : '0';
+
+      var params = new URLSearchParams();
+      params.set('action', 'bookingx_add_to_cart');
+      params.set('nonce', (window.bookingxVars && bookingxVars.nonce) ? bookingxVars.nonce : '');
+      params.set('product_id', productId || '');
+      if (variationId) params.set('variation_id', variationId);
+      params.set('booking_date', toISODate(s));
+      params.set('booking_end_date', (currentDuration === 'multi') ? toISODate(e) : '');
+      params.set('booking_time', selectedTimeLabel || '');
+      params.set('duration_label', durationLabel || '');
+      params.set('duration_token', currentDuration || '');
+      params.set('days_count', String(daysCount));
+      params.set('guests', String(guestsVal));
+
+      continueBtn.setAttribute('disabled', 'disabled');
+      fetch((window.bookingxVars && bookingxVars.ajax_url) ? bookingxVars.ajax_url : '/wp-admin/admin-ajax.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body: params.toString(),
+      }).then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (res && res.success && res.data && res.data.redirect) {
+            window.location.href = res.data.redirect;
+          } else {
+            isProcessing = false;
+            continueBtn.removeAttribute('disabled');
+            continueBtn.classList.remove('processing');
+            continueBtn.removeAttribute('aria-busy');
+            var t = continueBtn.getAttribute('data-original-text');
+            if (t) continueBtn.textContent = t;
+            alert('Could not add to cart. Please try again.');
+          }
+        })
+        .catch(function () {
+          isProcessing = false;
+          continueBtn.removeAttribute('disabled');
+          continueBtn.classList.remove('processing');
+          continueBtn.removeAttribute('aria-busy');
+          var t = continueBtn.getAttribute('data-original-text');
+          if (t) continueBtn.textContent = t;
+          alert('Request failed. Please check your connection.');
+        });
+    });
+  }
+  // Defensive: if disabled is manually removed during processing, block clicks anyway
+  if (continueBtn) {
+    continueBtn.addEventListener('click', function (e) {
+      if (isProcessing) {
+        e.stopPropagation();
+        e.preventDefault();
+        return false;
+      }
+    }, true);
   }
     return true;
   }

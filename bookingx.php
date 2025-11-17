@@ -82,10 +82,16 @@ function bookingx_shortcode_render()
     $product_id = get_the_ID();
     $product    = wc_get_product($product_id);
     $default_label = '';
-    $default_price = 0;
+    // Default price: for simple product use product price; variable will be overridden by first variation
+    $default_price = ($product && is_object($product)) ? wc_get_price_to_display($product) : 0;
     $currency_symbol = function_exists('get_woocommerce_currency_symbol') ? get_woocommerce_currency_symbol() : '$';
+    $is_variable = ($product && $product->is_type('variable'));
+    // For simple product, show per-day pricing label and keep Dates hidden
+    if (!$is_variable) {
+        $default_label = 'day';
+    }
 ?>
-    <div class="bookingx-container" role="group" aria-label="BookingX" data-currency-symbol="<?php echo esc_attr($currency_symbol); ?>">
+    <div class="bookingx-container" role="group" aria-label="BookingX" data-currency-symbol="<?php echo esc_attr($currency_symbol); ?>" data-product-id="<?php echo esc_attr($product_id); ?>" data-product-type="<?php echo esc_attr($is_variable ? 'variable' : 'simple'); ?>">
         <div class="bx-card">
             <div class="bx-header">
                 <!-- <div class="bx-step">1 of 3</div> -->
@@ -173,6 +179,7 @@ function bookingx_shortcode_render()
                                 $rendered_buttons = true;
                             }
                         }
+                        // If simple product, no variation buttons; duration remains single-day
                         ?>
                     </div>
 
@@ -248,3 +255,97 @@ function bookingx_footer_script()
 
     }
 }
+
+// Localize AJAX settings after scripts enqueued
+function bookingx_localize_script()
+{
+    if (is_admin()) return;
+    $is_product_page = function_exists('is_product') ? is_product() : is_singular('product');
+    if ($is_product_page) {
+        wp_localize_script('bookingx-init', 'bookingxVars', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce'    => wp_create_nonce('bookingx_add_to_cart'),
+            'redirect' => function_exists('wc_get_checkout_url') ? wc_get_checkout_url() : (function_exists('wc_get_cart_url') ? wc_get_cart_url() : home_url('/cart/')),
+        ));
+    }
+}
+add_action('wp_enqueue_scripts', 'bookingx_localize_script', 11);
+
+// AJAX: Add to cart with booking meta
+add_action('wp_ajax_bookingx_add_to_cart', 'bookingx_add_to_cart');
+add_action('wp_ajax_nopriv_bookingx_add_to_cart', 'bookingx_add_to_cart');
+function bookingx_add_to_cart()
+{
+    if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field($_POST['nonce']), 'bookingx_add_to_cart')) {
+        wp_send_json_error(array('message' => 'Invalid request'), 400);
+    }
+
+    $product_id   = isset($_POST['product_id']) ? absint($_POST['product_id']) : 0;
+    $variation_id = isset($_POST['variation_id']) ? absint($_POST['variation_id']) : 0;
+    if (!$product_id) {
+        wp_send_json_error(array('message' => 'Missing product_id'), 400);
+    }
+
+    $meta = array(
+        'booking_date'      => isset($_POST['booking_date']) ? sanitize_text_field($_POST['booking_date']) : '',
+        'booking_end_date'  => isset($_POST['booking_end_date']) ? sanitize_text_field($_POST['booking_end_date']) : '',
+        'booking_time'      => isset($_POST['booking_time']) ? sanitize_text_field($_POST['booking_time']) : '',
+        'duration_label'    => isset($_POST['duration_label']) ? sanitize_text_field($_POST['duration_label']) : '',
+        'duration_token'    => isset($_POST['duration_token']) ? sanitize_text_field($_POST['duration_token']) : '',
+        'days_count'        => isset($_POST['days_count']) ? absint($_POST['days_count']) : 0,
+        'guests'            => isset($_POST['guests']) ? absint($_POST['guests']) : 0,
+    );
+    $cart_item_data = array('bookingx' => $meta);
+
+    $added = WC()->cart->add_to_cart($product_id, 1, $variation_id, array(), $cart_item_data);
+    if (!$added) {
+        wp_send_json_error(array('message' => 'Could not add to cart'), 500);
+    }
+
+    $redirect = function_exists('wc_get_checkout_url') ? wc_get_checkout_url() : (function_exists('wc_get_cart_url') ? wc_get_cart_url() : home_url('/cart/'));
+    wp_send_json_success(array('redirect' => $redirect));
+}
+
+// Show booking meta in cart line items
+add_filter('woocommerce_get_item_data', function ($item_data, $cart_item) {
+    if (isset($cart_item['bookingx']) && is_array($cart_item['bookingx'])) {
+        $bx = $cart_item['bookingx'];
+        // Note: WooCommerce already shows variation attributes (e.g., Duration)
+        // to avoid duplicates, we don't re-add 'duration_label' here.
+        $pairs = array(
+            'booking_date'     => 'Booking Date',
+            'booking_end_date' => 'End Date',
+            'booking_time'     => 'Pick-up Time',
+            'guests'           => 'Guests',
+        );
+        foreach ($pairs as $key => $label) {
+            if (!empty($bx[$key])) {
+                $item_data[] = array(
+                    'name'    => esc_html($label),
+                    'value'   => esc_html($bx[$key]),
+                    'display' => esc_html($bx[$key]),
+                );
+            }
+        }
+    }
+    return $item_data;
+}, 10, 2);
+
+// Persist booking meta to order items on checkout
+add_action('woocommerce_checkout_create_order_line_item', function ($item, $cart_item_key, $values, $order) {
+    if (isset($values['bookingx']) && is_array($values['bookingx'])) {
+        $bx = $values['bookingx'];
+        // Avoid duplicating variation attribute meta (Duration) on order items
+        $pairs = array(
+            'booking_date'     => 'Booking Date',
+            'booking_end_date' => 'End Date',
+            'booking_time'     => 'Pick-up Time',
+            'guests'           => 'Guests',
+        );
+        foreach ($pairs as $key => $label) {
+            if (!empty($bx[$key])) {
+                $item->add_meta_data($label, $bx[$key], true);
+            }
+        }
+    }
+}, 10, 4);

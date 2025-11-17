@@ -6,7 +6,7 @@
   .bookingx-modal {
       display: none;
       position: fixed;
-      z-index: 1000;
+      z-index: 9999;
       left: 0;
       top: 0;
       width: 100%;
@@ -39,16 +39,16 @@
   }
 
   .bookingx-close {
-      position: absolute;
-      top: 15px;
-      left: 15px; /* Left top position */
-      color: #aaa;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
-      line-height: 1;
-      padding: 0 10px;
-      z-index: 1002;
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    color: #161616;
+    font-size: 28px;
+    font-weight: 500;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 10px;
+    z-index: 1002;
   }
 
   .bookingx-close:hover,
@@ -70,6 +70,7 @@
 
   .bookingx-modal-body {
     padding: 3px;
+    padding-bottom: 0px;
     height: calc(100% - 100px); /* Adjust for header and padding */
     overflow-y: auto;
   }
@@ -128,20 +129,21 @@
 .bx-title {
   margin: 8px 0 0;
   font-size: 22px;
-  color: var(--bx-text);
+  color: #161616;
 }
 
 .bx-section { margin-top: 18px; }
 .bx-section-title {
   font-weight: 600;
   margin-bottom: 14px;
-  color: var(--bx-text);
+  font-size: 15px;
+  color: #161616;
 }
 /* Row layout with right-side button */
 .bx-row { display: flex; align-items: center; justify-content: space-between; }
 .bx-date-toggle {
-  border: 2px solid #1e3a8a; /* navy */
-  color: #1e3a8a;
+  border: 2px solid #161616; /* navy */
+  color: #161616;
   background: #f8fafc;
   padding: 10px 16px;
   border-radius: 10px;
@@ -187,7 +189,7 @@
   height: 48px;
   line-height: 48px;
   border-radius: 8px;
-  color: var(--bx-text);
+  color: #161616;
 }
 #bx-calendar .flatpickr-day.today { font-weight: 600; }
 #bx-calendar .flatpickr-day.selected { position: relative; }
@@ -204,21 +206,22 @@
 
 /* Guests slider */
 .bx-guest-slider { position: relative; padding: 18px 8px; }
-.bx-track { position: relative; width: 100%; height: 4px; background: #e5e7eb; border-radius: 999px; }
+.bx-track { position: relative; width: 100%; height: 2px; background: #161616; border-radius: 999px; }
 .bx-bubble {
   position: absolute;
   top: -16px;
   left: 0;
   transform: translateX(-50%);
   min-width: 48px;
-  height: 36px;
-  line-height: 36px;
+  height: 30px;
+  line-height: 30px;
   text-align: center;
-  border: 1px solid #111827;
+  border: 1px solid #161616;
   border-radius: 999px;
   background: #ffffff;
-  font-weight: 600;
+  font-weight: 400;
   cursor: grab;
+  font-size: 15px;
 }
 .bx-bubble.dragging { cursor: grabbing; }
 
@@ -227,7 +230,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-top: 22px;
+  margin-top: 120px;
   position: sticky;
   bottom: 0;
   background: var(--bx-bg);
@@ -236,19 +239,15 @@
   padding: 12px 0; /* ensure comfortable touch area when stuck */
 }
 .bx-price {
-  /* display: inline-flex; */
-  /* align-items: center; */
-  /* gap: 10px; */
-  /* border: 2px solid #d1d5db; */
-  /* border-radius: 10px; */
   padding: 10px 12px;
+  padding-left: 0px;
 }
-.bx-amount { font-size: 14px; font-weight: 800; }
+.bx-amount { font-size: 15px; font-weight: 800; color: #161616 }
 .bx-duration { 
-  /* color: var(--bx-muted); display: inline-flex; align-items: center; gap: 6px;  */
-  font-size: 12px;
+  font-size: 15px;
+  color: #161616;
 }
-.bx-caret { font-size: 14px; color: var(--bx-muted); }
+.bx-caret { font-size: 15px; color: #161616; }
 
 .bx-continue {
   flex: 0 0 260px;
@@ -313,7 +312,7 @@
   user-select: none;
   background: #fff;
 }
-.bx-time:hover { border-color: #2f6fed; }
+.bx-time:hover { border-color: #161616; }
 
 /* Responsive tweaks */
 @media (max-width: 760px) {
@@ -345,4 +344,56 @@
   width: 100% !important;
   min-width: 100% !important;
   max-width: 100% !important;
+}
+
+.bx-section .bx-date-toggle,
+.bx-section .bx-select-btn,
+.bx-duration-section .bx-duration-group button{
+  color: #161616;
+  font-size: 12px;
+  border: 1px solid #161616;
+  box-shadow: none;
+  background-color: transparent;
+  border-radius: 6px;
+}
+
+.bx-duration-section .bx-duration-group button:hover, 
+.bx-duration-section .bx-duration-group button:active,
+.bx-duration-section .bx-duration-group button:focus{
+  background-color: #161616 !important;
+  color: #fff !important;
+}
+
+.bx-time-grid button{
+  color: #161616 !important;
+  font-size: 12px !important;
+  border: 1px solid #e0e0e0;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  border-radius: 6px !important;
+}
+
+.active{
+  background-color: #161616 !important;
+  color: #fff !important;
+}
+
+.active-time{
+  border-color: #161616 !important;
+}
+
+span.flatpickr-weekday{
+  color: #161616 !important;
+}
+
+.flatpickr-months .flatpickr-month{
+  width: 100% !important;
+}
+.flatpickr-current-month{
+  left: 0% !important;
+  width: 100% !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months{
+	font-weight: 600 !important;
 }
