@@ -114,7 +114,13 @@ function bookingx_shortcode_render()
                         <button id="bx-select-btn" class="bx-select-btn" type="button">Select</button>
                     </div>
                     <div class="bx-duration-section bx-hidden">
-                        <div class="bx-section-title">Duration</div>
+                        <div class="bx-row">
+                            <div class="bx-section-title">Duration</div>
+                            <div class="bx-duration-controls">
+                                <button id="bx-duration-prev" class="bx-duration-prev" type="button" aria-label="Previous durations" title="Previous">‹</button>
+                                <button id="bx-duration-next" class="bx-duration-next" type="button" aria-label="Next durations" title="Next">›</button>
+                            </div>
+                        </div>
                         <?php
                         // Render duration buttons dynamically from variable product variations
                         $rendered_buttons = false;

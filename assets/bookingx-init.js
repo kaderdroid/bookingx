@@ -87,7 +87,22 @@ document.addEventListener('DOMContentLoaded', function () {
         if (calPanel) calPanel.classList.add('bx-hidden');
         if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
         if (postDate) postDate.classList.remove('bx-hidden');
-        console.log(calEl);
+        // When a date is picked: show Duration and Available Pick-up Times, and focus them
+        // Keep simple products in single-day mode with dates row handled elsewhere
+        try {
+          if (durationContainer && !isSimpleProduct) {
+            durationContainer.classList.remove('bx-hidden');
+            var activeBtn = scope.querySelector('.bx-duration-btn.active') || durationBtns[0];
+            if (activeBtn && typeof activeBtn.focus === 'function') activeBtn.focus();
+          }
+          if (timeSection) {
+            generateTimes();
+            timeSection.classList.remove('bx-hidden');
+            // Focus previously active time or first time button
+            var focusTime = (timeGrid && timeGrid.querySelector('.active-time')) || (timeGrid && timeGrid.querySelector('.bx-time'));
+            if (focusTime && typeof focusTime.focus === 'function') focusTime.focus();
+          }
+        } catch (e) {}
       },
     });
 
@@ -169,6 +184,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // ----- Duration, Dates, and Time selection logic -----
   var durationBtns = Array.prototype.slice.call(scope.querySelectorAll('.bx-duration-btn'));
   var durationContainer = scope.querySelector('.bx-duration-section') || scope.querySelector('.bx-duration-group');
+  var durationGroup = scope.querySelector('.bx-duration-group');
+  var durationNext = scope.querySelector('#bx-duration-next');
+  var durationPrev = scope.querySelector('#bx-duration-prev');
   var selectBtn = scope.querySelector('#bx-select-btn');
   var timeSection = scope.querySelector('#bx-time-section');
   var timeGrid = scope.querySelector('#bx-time-grid');
@@ -245,6 +263,8 @@ document.addEventListener('DOMContentLoaded', function () {
       if (currentDuration === 'multi') datesRow.classList.remove('bx-hidden');
       else datesRow.classList.add('bx-hidden');
     }
+    // Initialize arrow visibility
+    updateDurationArrows();
   })();
 
   // Duration switching
@@ -336,6 +356,37 @@ document.addEventListener('DOMContentLoaded', function () {
         if (datesRow) datesRow.classList.add('bx-hidden');
       }
     });
+  }
+
+  // Duration horizontal slide: next button scrolls the group to the right
+  if (durationNext && durationGroup) {
+    durationNext.addEventListener('click', function () {
+      var step = durationGroup.clientWidth || 300;
+      durationGroup.scrollBy({ left: step, behavior: 'smooth' });
+      // Arrow visibility will update on scroll event
+    });
+  }
+
+  // Duration horizontal slide: prev button scrolls the group to the left
+  if (durationPrev && durationGroup) {
+    durationPrev.addEventListener('click', function () {
+      var step = durationGroup.clientWidth || 300;
+      durationGroup.scrollBy({ left: -step, behavior: 'smooth' });
+    });
+  }
+
+  // Keep arrow visibility in sync with scroll position and container width
+  function updateDurationArrows() {
+    if (!durationGroup) return;
+    var canScroll = (durationGroup.scrollWidth > durationGroup.clientWidth) || (durationBtns && durationBtns.length > 3);
+    if (durationPrev) durationPrev.classList.toggle('bx-hidden', !canScroll);
+    if (durationNext) durationNext.classList.toggle('bx-hidden', !canScroll);
+  }
+  if (durationGroup) {
+    durationGroup.addEventListener('scroll', updateDurationArrows, { passive: true });
+    window.addEventListener('resize', updateDurationArrows);
+    // Initial check after layout
+    setTimeout(updateDurationArrows, 0);
   }
 
   // Helper to format date as YYYY-MM-DD
